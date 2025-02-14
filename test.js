@@ -927,14 +927,6 @@ function drawGame() {
   ctx.fillRect(20, 35, (player1.stamina / player1.maxStamina) * 200, 10);
   ctx.fillRect(580, 35, (player2.stamina / player2.maxStamina) * 200, 10);
 
-  // Draw instructions for special attacks.
-  ctx.fillStyle = "white";
-  ctx.font = "15px Arial";
-  ctx.fillText("C for Special Attack", 20, 60);
-  if (gameMode === "two") {
-    ctx.fillText("Enter for Special Attack", 580, 60);
-  }
-
   // Draw Special Effects:
   effects.forEach((eff) => {
     if (eff.type === "fireDash") {
