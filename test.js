@@ -28,10 +28,10 @@ const characters = [
     color: "red",
     attackingColor: "red",
     specialAttackingColor: "orange",
-    stamina: 90,
+    stamina: 100,
     health: 90,
     redBar: 90,
-    speed: 6,
+    speed: 5,
     attack: "high",
     jump: "medium",
     special: "Fire Dash",
@@ -41,18 +41,18 @@ const characters = [
     color: "blue",
     attackingColor: "blue",
     specialAttackingColor: "DeepSkyBlue",
-    stamina: 100,
+    stamina: 80,
     health: 100,
     redBar: 100,
-    speed: 8,
+    speed: 7,
     attack: "medium",
     jump: "high",
-    special: "Teleportation",
+    special: "Air Tornado", // Updated from Teleportation
   },
   {
     name: "Titan",
     color: "brown",
-    health: 150,
+    health: 125,
     redBar: 100,
     speed: 3,
     attackingColor: "brown",
@@ -65,9 +65,9 @@ const characters = [
   {
     name: "Volt",
     color: "yellow",
-    health: 110,
-    redBar: 100,
-    speed: 5,
+    health: 80,
+    redBar: 80,
+    speed: 8,
     attackingColor: "yellow",
     specialAttackingColor: "Electric Blue",
     stamina: 100,
@@ -91,15 +91,15 @@ const characters = [
   {
     name: "Shade",
     color: "purple",
-    health: 90,
-    redBar: 90,
+    health: 75,
+    redBar: 75,
     speed: 10,
     attackingColor: "purple",
     specialAttackingColor: "DarkSlateGray",
     stamina: 110,
-    attack: "low",
+    attack: "medium",
     jump: "medium",
-    special: "Shadow Clone",
+    special: "Shadow Teleprotation", // Updated from Shadow Clone
   },
   {
     name: "Blaze",
@@ -132,7 +132,7 @@ const characters = [
 // Selected characters
 let selectedCharP1 = null;
 let selectedCharP2 = null;
-// In single-player mode, Player 2 will be AI-controlled (using the default or a random selection).
+// In single-player mode, Player 2 will be AI-controlled.
 
 // -------------------------------
 // EFFECTS (not finished)
@@ -157,9 +157,10 @@ const keys = {
   ArrowUp: false, // jump for P2
 };
 
+let p1ultUsage = 1;
+let p2ultUsage = 1;
 // Attacking damage / reading keys event
 window.addEventListener("keydown", (e) => {
-  // In "playing" state, only process movement keys if not in a menu.
   if (gameState === "playing") {
     if (keys.hasOwnProperty(e.key)) {
       keys[e.key] = true;
@@ -170,21 +171,18 @@ window.addEventListener("keydown", (e) => {
       e.key === " " &&
       currentTime - player1.lastNormalAttackTime > player1.attackCooldown
     ) {
-      // Check for combo (if within 400ms, add multiplier)
       if (currentTime - player1.lastNormalAttackTime < 400) {
         player1.comboCount++;
       } else {
         player1.comboCount = 1;
       }
       player1.lastNormalAttackTime = currentTime;
-      // Only allow attack if enough stamina:
       if (player1.stamina >= 10) {
         player1.isAttacking = true;
         player1.stamina -= 10;
         punchSound.play();
         setTimeout(() => {
           player1.isAttacking = false;
-          // Reset combo count after attack resolves:
           player1.comboCount = 0;
         }, 100);
       }
@@ -222,7 +220,6 @@ window.addEventListener("keydown", (e) => {
         player1.isSpecialAttacking = true;
         player1.stamina -= 20;
         specialSound.play();
-        // Spawn a special effect at opponent's location
         effects.push({
           x: player2.x + player2.width / 2,
           y: player2.y + player2.height / 2,
@@ -231,6 +228,94 @@ window.addEventListener("keydown", (e) => {
           decay: 0.05,
           color: "purple",
         });
+        player1.lastSpecialAttackTime = currentTime;
+        setTimeout(() => (player1.isSpecialAttacking = false), 100);
+      }
+    }
+    // --- Player 1 Ultimate Attack ('f') ---
+    if (e.key === "f" && p1ultUsage === 1) {
+      if (player1.stamina >= 75) {
+        player1.isUltAttacking = true;
+        player1.stamina -= 75;
+        p1ultUsage--;
+        // Determine ult effect based on character
+        if (player1.name === "Flare") {
+          effects.push({
+            type: "fireDash",
+            duration: 2000,
+            speedBoost: 12,
+            damage: 0.2,
+            owner: player1,
+            startTime: Date.now(),
+            applied: false,
+          });
+          player1.isInvincible = true;
+          setTimeout(() => {
+            player1.isInvincible = false;
+          }, 2000);
+        } else if (player1.name === "Vortex") {
+          effects.push({
+            type: "airTornado",
+            duration: 3500,
+            velocityMultiplier: 0.1,
+            damage: 0.125,
+            owner: player1,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player1.name === "Titan") {
+          effects.push({
+            type: "groundSlam",
+            duration: 1000,
+            damage: 2,
+            owner: player1,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player1.name === "Volt") {
+          effects.push({
+            type: "lightningStrike",
+            duration: 500,
+            damage: 15,
+            owner: player1,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player1.name === "Frost") {
+          effects.push({
+            type: "frozenTrap",
+            duration: 2000,
+            owner: player1,
+            target: player2,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player1.name === "Shade") {
+          effects.push({
+            type: "shadowTeleprotation",
+            duration: 100,
+            owner: player1,
+            target: player2,
+            startTime: Date.now(),
+          });
+        } else if (player1.name === "Blaze") {
+          effects.push({
+            type: "lavaBurst",
+            duration: 1500,
+            damage: 0.5,
+            owner: player1,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player1.name === "Mystic") {
+          effects.push({
+            type: "healingAura",
+            duration: 3000,
+            healPerTick: 0.5,
+            owner: player1,
+            startTime: Date.now(),
+          });
+        }
         player1.lastSpecialAttackTime = currentTime;
         setTimeout(() => (player1.isSpecialAttacking = false), 100);
       }
@@ -258,23 +343,110 @@ window.addEventListener("keydown", (e) => {
         setTimeout(() => (player2.isSpecialAttacking = false), 100);
       }
     }
+    // --- Player 2 Ultimate Attack ('m') for two-player mode ---
+    if (gameMode === "two" && e.key === "m" && p2ultUsage === 1) {
+      if (player2.stamina >= 75) {
+        player2.isUltAttacking = true;
+        player2.stamina -= 75;
+        p2ultUsage--;
+        if (player2.name === "Flare") {
+          effects.push({
+            type: "fireDash",
+            duration: 2000,
+            speedBoost: 12,
+            damage: 0.2,
+            owner: player2,
+            startTime: Date.now(),
+            applied: false,
+          });
+          player2.isInvincible = true;
+          setTimeout(() => {
+            player2.isInvincible = false;
+          }, 2000);
+        } else if (player2.name === "Vortex") {
+          effects.push({
+            type: "airTornado",
+            duration: 3500,
+            velocityMultiplier: 0.1,
+            damage: 0.125,
+            owner: player2,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player2.name === "Titan") {
+          effects.push({
+            type: "groundSlam",
+            duration: 1000,
+            damage: 2,
+            owner: player2,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player2.name === "Volt") {
+          effects.push({
+            type: "lightningStrike",
+            duration: 500,
+            damage: 15,
+            owner: player2,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player2.name === "Frost") {
+          effects.push({
+            type: "frozenTrap",
+            duration: 2000,
+            owner: player2,
+            target: player1,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player2.name === "Shade") {
+          effects.push({
+            type: "shadowTeleprotation",
+            duration: 100,
+            owner: player2,
+            target: player1,
+            startTime: Date.now(),
+          });
+        } else if (player2.name === "Blaze") {
+          effects.push({
+            type: "lavaBurst",
+            duration: 1500,
+            damage: 0.5,
+            owner: player2,
+            startTime: Date.now(),
+            applied: false,
+          });
+        } else if (player2.name === "Mystic") {
+          effects.push({
+            type: "healingAura",
+            duration: 3000,
+            healPerTick: 0.5,
+            owner: player2,
+            startTime: Date.now(),
+          });
+        }
+        player2.lastSpecialAttackTime = currentTime;
+        setTimeout(() => (player2.isSpecialAttacking = false), 100);
+      }
+    }
   } else if (gameState === "menu") {
-    // --- Main Menu Controls ---
-    // Press 1 for Single Player, 2 for Two Player.
     if (e.key === "1") {
       gameMode = "single";
     }
     if (e.key === "2") {
       gameMode = "two";
     }
-    // Press Enter to go to Character Selection.
     if (e.key === "Enter") {
       gameState = "characterSelect";
     }
   } else if (gameState === "gameOver") {
-    // Press Enter to return to the main menu.
     if (e.key === "Enter") {
       gameState = "menu";
+      selectedCharP1 = null;
+      selectedCharP2 = null;
+      p1ultUsage = 1;
+      p2ultUsage = 1;
     }
   }
 });
@@ -332,7 +504,6 @@ canvas.addEventListener("click", (e) => {
 // INITIALIZE PLAYERS (called when game starts)
 // -------------------------------
 function startGame() {
-  // Create player objects based on selected character stats.
   player1 = {
     x: 50,
     y: 250,
@@ -343,6 +514,7 @@ function startGame() {
     isJumping: false,
     isAttacking: false,
     isSpecialAttacking: false,
+    isUltAttacking: false,
     attackCooldown: 300,
     spAttackCooldown: 500,
     lastNormalAttackTime: 0,
@@ -351,6 +523,7 @@ function startGame() {
     comboCount: 0,
     stamina: selectedCharP1.stamina,
     maxStamina: 100,
+    isInvincible: false,
   };
 
   player2 = {
@@ -363,6 +536,7 @@ function startGame() {
     isJumping: false,
     isAttacking: false,
     isSpecialAttacking: false,
+    isUltAttacking: false,
     attackCooldown: 300,
     spAttackCooldown: 500,
     lastNormalAttackTime: 0,
@@ -371,16 +545,16 @@ function startGame() {
     comboCount: 0,
     stamina: selectedCharP2.stamina,
     maxStamina: 100,
+    isInvincible: false,
   };
 
-  // Reset health in case characters have been used before.
+  // Reset health and assign maxHealth for healing caps.
   player1.health = selectedCharP1.health;
   player2.health = selectedCharP2.health;
+  player1.maxHealth = selectedCharP1.health;
+  player2.maxHealth = selectedCharP2.health;
 
-  // Start background music.
   bgMusic.play();
-
-  // Switch to playing state.
   gameState = "playing";
 }
 
@@ -388,16 +562,13 @@ function startGame() {
 // AI LOGIC (for single-player mode)
 // -------------------------------
 function updateAI() {
-  // Only run if in single-player mode.
   if (gameMode !== "single") return;
 
-  // Simple AI: move toward player1.
   if (player2.x > player1.x + player1.width) {
     player2.x -= player2.speed;
   } else if (player2.x < player1.x - player2.width) {
     player2.x += player2.speed;
   } else {
-    // If close enough, attack.
     const currentTime = Date.now();
     if (
       currentTime - player2.lastNormalAttackTime > player2.attackCooldown &&
@@ -405,7 +576,7 @@ function updateAI() {
     ) {
       player2.isAttacking = true;
       player2.lastNormalAttackTime = currentTime;
-      player2.comboCount = 1; // AI does a simple attack.
+      player2.comboCount = 1;
       player2.stamina -= 10;
       punchSound.play();
       setTimeout(() => {
@@ -413,7 +584,6 @@ function updateAI() {
       }, 100);
     }
   }
-  // Occasionally jump (small chance)
   if (!player2.isJumping && Math.random() < 0.005) {
     player2.velocityY = -12.5;
     player2.isJumping = true;
@@ -423,9 +593,8 @@ function updateAI() {
 // -------------------------------
 // UPDATE & RENDER FUNCTIONS
 // -------------------------------
-
 function updateGame() {
-  // -------- Movement for Player 1 (controlled by keys) --------
+  // Movement for Player 1
   if (keys.a) {
     player1.x -= player1.speed;
     player1.facingLeft = true;
@@ -445,7 +614,7 @@ function updateGame() {
     player1.isJumping = true;
   }
 
-  // -------- Movement for Player 2 (only if two-player; else AI) --------
+  // Movement for Player 2 (or AI)
   if (gameMode === "two") {
     if (keys.ArrowLeft) {
       player2.x -= player2.speed;
@@ -469,12 +638,11 @@ function updateGame() {
     updateAI();
   }
 
-  // -------- Clamp positions within canvas --------
+  // Clamp positions within canvas
   player1.x = Math.max(0, Math.min(player1.x, canvas.width - player1.width));
   player2.x = Math.max(0, Math.min(player2.x, canvas.width - player2.width));
 
-  // -------- Gravity & Jumping --------
-  // For Player 1:
+  // Gravity & Jumping for Player 1
   player1.y += player1.velocityY;
   if (player1.y < 250) {
     player1.velocityY += 0.5;
@@ -483,7 +651,7 @@ function updateGame() {
     player1.velocityY = 0;
     player1.isJumping = false;
   }
-  // For Player 2:
+  // Gravity & Jumping for Player 2
   player2.y += player2.velocityY;
   if (player2.y < 250) {
     player2.velocityY += 0.5;
@@ -493,33 +661,32 @@ function updateGame() {
     player2.isJumping = false;
   }
 
-  // -------- Stamina Regeneration --------
+  // Stamina Regeneration
   [player1, player2].forEach((p) => {
     if (p.stamina < p.maxStamina) {
       p.stamina += 0.2;
     }
   });
 
-  // -------- Collision Detection for Attacks --------
-  // For Player 1 (normal attack)
-  // Define attack range
-  const attackRange = 50; // Adjust if needed
-
-  // Function to check if a player is within attack range
+  // Collision Detection for Attacks
+  const attackRange = 50;
   function isWithinAttackRange(attacker, defender) {
     return (
-      Math.abs(attacker.x - defender.x) < attackRange || // Attack from behind
-      Math.abs(attacker.x + attacker.width - defender.x) < attackRange // Attack from front
+      Math.abs(attacker.x - defender.x) < attackRange ||
+      Math.abs(attacker.x + attacker.width - defender.x) < attackRange
     );
   }
   function p2isWithinAttackRange(attacker, defender) {
     return (
-      Math.abs(attacker.x - defender.x) < attackRange || // Attack from behind
-      Math.abs(defender.x + defender.width - attacker.x) < attackRange // Attack from front
+      Math.abs(attacker.x - defender.x) < attackRange ||
+      Math.abs(defender.x + defender.width - attacker.x) < attackRange
     );
   }
-  // Player 1 attack logic
-  if (player1.isAttacking && isWithinAttackRange(player1, player2)) {
+  if (
+    player1.isAttacking &&
+    isWithinAttackRange(player1, player2) &&
+    !player2.isInvincible
+  ) {
     if (player1.attack === "high") {
       player2.health -= player1.comboCount * 1.15;
     } else if (player1.attack === "medium") {
@@ -528,9 +695,11 @@ function updateGame() {
       player2.health -= player1.comboCount * 0.9;
     }
   }
-
-  // Player 2 (AI) attack logic
-  if (player2.isAttacking && p2isWithinAttackRange(player2, player1)) {
+  if (
+    player2.isAttacking &&
+    p2isWithinAttackRange(player2, player1) &&
+    !player1.isInvincible
+  ) {
     if (player2.attack === "high") {
       player1.health -= player2.comboCount * 1.15;
     } else if (player2.attack === "medium") {
@@ -539,40 +708,151 @@ function updateGame() {
       player1.health -= player2.comboCount * 0.9;
     }
   }
-
-  // For special attacks: same direction check
-  if (player1.isSpecialAttacking) {
-    if (
-      (player1.x + player1.width >= player2.x && player1.speed > 0) || // Player 1 is moving right
-      (player1.x <= player2.x + player2.width && player1.speed < 0) // Player 1 is moving left
-    ) {
-      if (Math.abs(player1.x + player1.width - player2.x) < 50) {
-        player2.health -= 1.75;
-      }
-    }
+  if (
+    player1.isSpecialAttacking &&
+    isWithinAttackRange(player1, player2) &&
+    !player2.isInvincible
+  ) {
+    player2.health -= 1.75;
+  }
+  if (
+    player2.isSpecialAttacking &&
+    p2isWithinAttackRange(player2, player1) &&
+    !player1.isInvincible
+  ) {
+    player1.health -= 1.75;
   }
 
-  if (player2.isSpecialAttacking) {
-    if (
-      (player2.x + player2.width >= player1.x && player2.speed > 0) || // Player 2 is moving right
-      (player2.x <= player1.x + player1.width && player2.speed < 0) // Player 2 is moving left
-    ) {
-      if (Math.abs(player2.x - (player1.x + player1.width)) < 50) {
-        player1.health -= 1.75;
-      }
-    }
-  }
-
-  // -------- Update Special Effects --------
+  // Update Special Effects
   for (let i = effects.length - 1; i >= 0; i--) {
-    effects[i].radius += 1;
-    effects[i].alpha -= effects[i].decay;
-    if (effects[i].alpha <= 0) {
+    let effect = effects[i];
+
+    if (effect.type === "fireDash") {
+      let elapsed = Date.now() - effect.startTime;
+      if (elapsed < effect.duration) {
+        if (!effect.applied) {
+          effect.owner.speed += effect.speedBoost;
+          effect.applied = true;
+        }
+        if (
+          effect.owner === player1 &&
+          Math.abs(effect.owner.x - player2.x) < 60
+        ) {
+          player2.health -= effect.damage;
+        } else if (
+          effect.owner === player2 &&
+          Math.abs(effect.owner.x - player1.x) < 60
+        ) {
+          player1.health -= effect.damage;
+        }
+      } else {
+        if (effect.applied) {
+          effect.owner.speed -= effect.speedBoost;
+        }
+        effects.splice(i, 1);
+      }
+    } else if (effect.type === "airTornado") {
+      let elapsed = Date.now() - effect.startTime;
+      if (elapsed < effect.duration) {
+        if (effect.owner === player1 && Math.abs(player2.x - player1.x) < 80) {
+          player2.health -= effect.damage;
+        } else if (
+          effect.owner === player2 &&
+          Math.abs(player1.x - player2.x) < 80
+        ) {
+          player1.health -= effect.damage;
+        }
+      } else {
+        effects.splice(i, 1);
+      }
+    } else if (effect.type === "groundSlam") {
+      let elapsed = Date.now() - effect.startTime;
+      if (elapsed < effect.duration) {
+        if (
+          effect.owner === player1 &&
+          Math.abs(player2.x - (player1.x + player1.width)) < 60
+        ) {
+          player2.health -= effect.damage;
+        } else if (
+          effect.owner === player2 &&
+          Math.abs(player1.x - (player2.x - player2.width)) < 60
+        ) {
+          player1.health -= effect.damage;
+        }
+      } else {
+        effects.splice(i, 1);
+      }
+    } else if (effect.type === "lightningStrike") {
+      let elapsed = Date.now() - effect.startTime;
+      if (!effect.applied && elapsed > 300) {
+        if (effect.owner === player1) {
+          player2.health -= effect.damage;
+        } else {
+          player1.health -= effect.damage;
+        }
+        effect.applied = true;
+      }
+      if (elapsed >= effect.duration) {
+        effects.splice(i, 1);
+      }
+    } else if (effect.type === "frozenTrap") {
+      let elapsed = Date.now() - effect.startTime;
+      if (!effect.applied) {
+        effect.originalSpeed = effect.target.speed;
+        effect.target.speed = 0;
+        effect.applied = true;
+      }
+      if (elapsed >= effect.duration) {
+        effect.target.speed = effect.originalSpeed;
+        effects.splice(i, 1);
+      }
+    } else if (effect.type === "shadowTeleprotation") {
+      if (effect.owner === player1) {
+        player1.x = player2.x - player1.width - 10;
+        player2.health -= 5;
+      } else {
+        player2.x = player1.x + player1.width + 10;
+        player1.health -= 5;
+      }
       effects.splice(i, 1);
+    } else if (effect.type === "lavaBurst") {
+      let elapsed = Date.now() - effect.startTime;
+      if (elapsed < effect.duration) {
+        if (
+          effect.owner === player1 &&
+          Math.abs(player2.x - (player1.x + player1.width)) < 80
+        ) {
+          player2.health -= effect.damage;
+        } else if (
+          effect.owner === player2 &&
+          Math.abs(player1.x - (player2.x - player2.width)) < 80
+        ) {
+          player1.health -= effect.damage;
+        }
+      } else {
+        effects.splice(i, 1);
+      }
+    } else if (effect.type === "healingAura") {
+      let elapsed = Date.now() - effect.startTime;
+      if (elapsed < effect.duration) {
+        effect.owner.health = Math.min(
+          effect.owner.health + effect.healPerTick,
+          effect.owner.maxHealth
+        );
+      } else {
+        effects.splice(i, 1);
+      }
+    } else {
+      // Generic effect update (for your circle effects)
+      effect.radius += 1;
+      effect.alpha -= effect.decay;
+      if (effect.alpha <= 0) {
+        effects.splice(i, 1);
+      }
     }
   }
 
-  // -------- Check for Win Condition --------
+  // Check for Win Condition
   if (player1.health <= 0 || player2.health <= 0) {
     gameState = "gameOver";
     bgMusic.pause();
@@ -608,33 +888,33 @@ function drawGame() {
   if (player1.redBar < 100) {
     ctx.fillStyle = "red";
     ctx.fillRect(20, 20, player1.redBar * 2, 10);
-  } else if (player1.redBar >= 100) {
+  } else {
     ctx.fillStyle = "red";
     ctx.fillRect(20, 20, 200, 10);
   }
   if (player2.redBar < 100) {
     ctx.fillStyle = "red";
     ctx.fillRect(580, 20, player2.redBar * 2, 10);
-  } else if (player2.redBar >= 100) {
+  } else {
     ctx.fillStyle = "red";
     ctx.fillRect(580, 20, 200, 10);
   }
 
   if (player1.health > 100) {
     ctx.fillStyle = "green";
-    ctx.fillRect(20, 20, (player1.health - (player1.health - 100)) * 2, 10);
+    ctx.fillRect(20, 20, 200, 10);
     ctx.fillStyle = "blue";
     ctx.fillRect(20, 20, (player1.health - 100) * 2, 10);
-  } else if (player1.health <= 100 && player1.health >= 0) {
+  } else if (player1.health >= 0) {
     ctx.fillStyle = "green";
     ctx.fillRect(20, 20, player1.health * 2, 10);
   }
   if (player2.health > 100) {
     ctx.fillStyle = "green";
-    ctx.fillRect(580, 20, (player2.health - (player2.health - 100)) * 2, 10);
+    ctx.fillRect(580, 20, 200, 10);
     ctx.fillStyle = "blue";
     ctx.fillRect(580, 20, (player2.health - 100) * 2, 10);
-  } else if (player2.health <= 100 && player2.health >= 0) {
+  } else if (player2.health >= 0) {
     ctx.fillStyle = "green";
     ctx.fillRect(580, 20, player2.health * 2, 10);
   }
@@ -658,13 +938,146 @@ function drawGame() {
 
   // Draw Special Effects:
   effects.forEach((eff) => {
-    ctx.save();
-    ctx.globalAlpha = eff.alpha;
-    ctx.beginPath();
-    ctx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2);
-    ctx.fillStyle = eff.color;
-    ctx.fill();
-    ctx.restore();
+    if (eff.type === "fireDash") {
+      // Fire Dash effect (already implemented)
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = "orange";
+      if (eff.owner === player1) {
+        ctx.fillRect(
+          eff.owner.x - 20,
+          eff.owner.y + 10,
+          40,
+          eff.owner.height - 20
+        );
+      } else if (eff.owner === player2) {
+        ctx.fillRect(
+          eff.owner.x + 20,
+          eff.owner.y + 10,
+          40,
+          eff.owner.height - 20
+        );
+      }
+      ctx.restore();
+    } else if (eff.type === "airTornado") {
+      // Air Tornado: Draw a rotating blue circle around the owner.
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = "DeepSkyBlue";
+      ctx.lineWidth = 5;
+      ctx.translate(
+        eff.owner.x + eff.owner.width / 2,
+        eff.owner.y + eff.owner.height / 2
+      );
+      // Rotate based on time for a spinning effect.
+      ctx.rotate((Date.now() / 1000) % (2 * Math.PI));
+      ctx.beginPath();
+      ctx.arc(0, 0, 30, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    } else if (eff.type === "groundSlam") {
+      // Ground Slam: Draw a shockwave semi-circle at the base.
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = "brown";
+      ctx.beginPath();
+      ctx.arc(
+        eff.owner.x + eff.owner.width / 2,
+        eff.owner.y + eff.owner.height,
+        40,
+        0,
+        Math.PI,
+        true
+      );
+      ctx.fill();
+      ctx.restore();
+    } else if (eff.type === "lightningStrike") {
+      // Lightning Strike: Draw a lightning bolt (line) from attacker to target.
+      ctx.save();
+      ctx.globalAlpha = 0.8;
+      ctx.strokeStyle = "yellow";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      let startX = eff.owner.x + eff.owner.width / 2;
+      let startY = eff.owner.y;
+      // Determine the target based on which player is the attacker.
+      let target = eff.owner === player1 ? player2 : player1;
+      let endX = target.x + target.width / 2;
+      let endY = target.y;
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      ctx.restore();
+    } else if (eff.type === "frozenTrap") {
+      // Frozen Trap: Draw a blue overlay on the target.
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = "lightblue";
+      ctx.beginPath();
+      ctx.arc(
+        eff.target.x + eff.target.width / 2,
+        eff.target.y + eff.target.height / 2,
+        30,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+    } else if (eff.type === "shadowTeleprotation") {
+      // Shadow Teleprotation: A quick shadow flash at the attacker’s position.
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = "purple";
+      ctx.beginPath();
+      ctx.arc(
+        eff.owner.x + eff.owner.width / 2,
+        eff.owner.y + eff.owner.height / 2,
+        20,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+    } else if (eff.type === "lavaBurst") {
+      // Lava Burst: Draw a red burst around the owner.
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(
+        eff.owner.x + eff.owner.width / 2,
+        eff.owner.y + eff.owner.height / 2,
+        40,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+    } else if (eff.type === "healingAura") {
+      // Healing Aura: Draw a glowing aura that pulses.
+      ctx.save();
+      ctx.globalAlpha = 0.4 + 0.1 * Math.sin(Date.now() / 200);
+      ctx.fillStyle = "gold";
+      ctx.beginPath();
+      ctx.arc(
+        eff.owner.x + eff.owner.width / 2,
+        eff.owner.y + eff.owner.height / 2,
+        30,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+    } else {
+      // Fallback for generic effects (e.g., the original circle effect)
+      ctx.save();
+      ctx.globalAlpha = eff.alpha;
+      ctx.fillStyle = eff.color || "white";
+      ctx.beginPath();
+      ctx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   });
 
   // If game over, show winner:
@@ -742,5 +1155,4 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// Start the loop.
 loop();
